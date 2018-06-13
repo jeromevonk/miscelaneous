@@ -29,8 +29,12 @@ ROW_OFFSET    = 3
 
 # Months and year of search
 FIRST_MONTH = 4
-LAST_MONTH  = 5
+LAST_MONTH  = 6
 YEAR = 2018
+
+# Months have different number of days
+months_with_30 = [4, 6, 9, 11]
+months_with_31 = [1, 3, 5, 7, 8, 10, 12]
 
 OUTPUT_FILE = "imap_get_rides.xlsx"
 
@@ -42,8 +46,21 @@ after:2017/11/01 before:2017/12/01 from:nao-responder@99taxis.com
 '''
 
 def getRidesCost(company, month):
-    AFTER  = "{}/{}/31".format(YEAR, month-1)
     BEFORE = "{}/{}/01".format(YEAR, month+1)
+
+    # --------------------------------------------------------
+    # Must pay attention to the last day of the month
+    # --------------------------------------------------------
+    if month-1 in months_with_31:
+        AFTER  = "{}/{}/31".format(YEAR, month-1)
+    elif month-1 in months_with_30:
+        AFTER  = "{}/{}/30".format(YEAR, month-1)
+    else:
+        # Leap year?
+        if YEAR%4 == 0:
+            AFTER  = "{}/{}/28".format(YEAR, month-1)
+        else:
+            AFTER  = "{}/{}/29".format(YEAR, month-1)
 
     TO_SEARCH_UBER   = "after:%s before:%s 'trip with uber'" % (AFTER,BEFORE)
     TO_SEARCH_CABIFY = "after:%s before:%s 'journey with cabify'" % (AFTER,BEFORE)
@@ -155,7 +172,8 @@ sheet['A1'] = datetime.datetime.now()
 sheet['B1'] = USERNAME
 sheet['B3'] = "Uber"
 sheet['C3'] = "Cabify"
-sheet['D3'] = "Total"
+sheet['D3'] = "99"
+sheet['E3'] = "Total"
 
 
 # Save monthly values
@@ -174,7 +192,6 @@ for month in range(FIRST_MONTH, LAST_MONTH):
     sheet.cell(row=ROW_OFFSET+month, column=COLUMN_CABIFY).value = total_cabify
 
     """ Get all journeys with 99 in the month"""
-    total_99 = 0
     total_99 = getRidesCost("99", month)
     sheet.cell(row=ROW_OFFSET+month, column=COLUMN_99).value = total_99
 
